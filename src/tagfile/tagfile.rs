@@ -28,7 +28,7 @@ impl<R: Read> Tagfile<R> {
 		let magic = self.read_u64()?;
 		if magic != 0xD011FACECAB00D1E {
 			// TODO: macro for assets as errors.
-			return Err(Error::Invalid(format!("Unexpected magic: {magic:#0x}")));
+			return Err(Error::Invalid(format!("Unexpected magic: {magic:#0x}.")));
 		}
 
 		loop {
@@ -36,8 +36,17 @@ impl<R: Read> Tagfile<R> {
 			match tag {
 				Tag::Metadata => {
 					self.version = self.read_i32()?;
+					if self.version != 3 {
+						todo!("Unhandled file version {}.", self.version)
+					}
 				}
-				other => todo!("Unhandled tag kind {other:?}"),
+
+				Tag::Definition => {
+					let definition = self.read_definition()?;
+					todo!("{definition:#?}")
+				}
+
+				other => todo!("Unhandled tag kind {other:?}."),
 			}
 		}
 
@@ -48,12 +57,14 @@ impl<R: Read> Tagfile<R> {
 #[derive(Debug)]
 enum Tag {
 	Metadata,
+	Definition,
 }
 
 impl From<i32> for Tag {
 	fn from(value: i32) -> Self {
 		match value {
 			1 => Self::Metadata,
+			2 => Self::Definition,
 			other => todo!("Unhandled tag kind ID {other}."),
 		}
 	}
