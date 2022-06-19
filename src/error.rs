@@ -4,8 +4,14 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum Error {
-	#[error("{0}")]
-	IO(#[from] io::Error),
+	#[error("Invalid: {0}")]
+	Invalid(String),
+}
+
+impl From<io::Error> for Error {
+	fn from(error: io::Error) -> Self {
+		Self::Invalid(error.to_string())
+	}
 }
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
