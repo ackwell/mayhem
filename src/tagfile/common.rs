@@ -4,28 +4,22 @@ use crate::error::Result;
 
 use super::tagfile::Tagfile;
 
-impl<R: Read> Tagfile<R> {
-	#[inline]
-	pub fn read_u64(&mut self) -> Result<u64> {
-		read_u64(&mut self.reader)
-	}
+macro_rules! read_primitive {
+	($type:ty, $fn_name:ident) => {
+		impl<R: Read> Tagfile<R> {
+			#[inline]
+			pub fn $fn_name(&mut self) -> Result<$type> {
+				$fn_name(&mut self.reader)
+			}
+		}
 
-	#[inline]
-	pub fn read_u8(&mut self) -> Result<u8> {
-		read_u8(&mut self.reader)
-	}
+		pub fn $fn_name(input: &mut impl Read) -> Result<$type> {
+			let mut buffer = [0u8; std::mem::size_of::<$type>()];
+			input.read_exact(&mut buffer)?;
+			Ok(<$type>::from_le_bytes(buffer))
+		}
+	};
 }
 
-pub fn read_u64(input: &mut impl Read) -> Result<u64> {
-	let mut buffer = [0u8; 8];
-	input.read_exact(&mut buffer)?;
-	let value = u64::from_le_bytes(buffer);
-	Ok(value)
-}
-
-pub fn read_u8(input: &mut impl Read) -> Result<u8> {
-	let mut buffer = [0u8; 1];
-	input.read_exact(&mut buffer)?;
-	let value = u8::from_le_bytes(buffer);
-	Ok(value)
-}
+read_primitive!(u64, read_u64);
+read_primitive!(u8, read_u8);
