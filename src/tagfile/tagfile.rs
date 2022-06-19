@@ -56,6 +56,10 @@ impl<R: Read> Tagfile<R> {
 					self.read_definition()?;
 				}
 
+				Tag::Instance => {
+					self.read_instance()?;
+				}
+
 				other => todo!("Unhandled tag kind {other:?}."),
 			}
 		}
@@ -68,6 +72,7 @@ impl<R: Read> Tagfile<R> {
 enum Tag {
 	Metadata,
 	Definition,
+	Instance,
 }
 
 impl From<i32> for Tag {
@@ -75,6 +80,7 @@ impl From<i32> for Tag {
 		match value {
 			1 => Self::Metadata,
 			2 => Self::Definition,
+			4 => Self::Instance,
 			other => todo!("Unhandled tag kind ID {other}."),
 		}
 	}

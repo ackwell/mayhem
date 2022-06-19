@@ -36,17 +36,19 @@ impl<R: Read> Tagfile<R> {
 	}
 
 	fn read_kind(&mut self) -> Result<FieldKind> {
+		// First value contains the base field kind as well as some metadata.
 		let kind_data = self.read_i32()?;
-
 		let base_kind = kind_data & 0xF;
 		let is_array = (kind_data & 0x10) != 0;
 		let is_tuple = (kind_data & 0x20) != 0;
 
+		// Tuples unhelpfully have their size before anything else.
 		let tuple_size = match is_tuple {
 			true => usize::try_from(self.read_i32()?).unwrap(),
 			false => 0,
 		};
 
+		// Map to the base field kind.
 		let mut field_kind = match base_kind {
 			0x0 => FieldKind::Void,
 			0x1 => FieldKind::Byte,
@@ -66,6 +68,7 @@ impl<R: Read> Tagfile<R> {
 			}
 		};
 
+		// Wrap the field kind in container kinds if appropriate.
 		if is_tuple {
 			field_kind = FieldKind::Tuple(field_kind.into(), tuple_size);
 		} else if is_array {
