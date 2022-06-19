@@ -1,6 +1,8 @@
-use std::io::Read;
+use std::{io::Read, rc::Rc};
 
 use crate::error::{Error, Result};
+
+use super::definition::Definition;
 
 // TODO: return type
 pub fn read(input: &mut impl Read) -> Result<()> {
@@ -16,6 +18,8 @@ pub struct Tagfile<R> {
 	pub reader: R,
 
 	// Caches
+	// TODO: The Option<>s here are to support empty case values - but there's realistically very few of those, and it complicates consumption a reasonable amount. Consider alternatives.
+	pub definitions: Vec<Option<Rc<Definition>>>,
 	pub strings: Vec<Option<String>>,
 }
 
@@ -25,6 +29,7 @@ impl<R: Read> Tagfile<R> {
 			version: -1,
 			reader,
 
+			definitions: Vec::from([None]),
 			strings: Vec::from([Some("".into()), None]),
 		}
 	}
