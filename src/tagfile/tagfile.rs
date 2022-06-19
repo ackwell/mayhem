@@ -52,8 +52,8 @@ impl<R: Read> Tagfile<R> {
 				}
 
 				Tag::Definition => {
-					let definition = self.read_definition()?;
-					todo!("{definition:#?}")
+					// NOTE: Definitions are currently only referenced after reading via the cache.
+					self.read_definition()?;
 				}
 
 				other => todo!("Unhandled tag kind {other:?}."),
