@@ -2,7 +2,14 @@ use std::io::Read;
 
 use crate::error::Result;
 
-use super::common::read_u8;
+use super::{common::read_u8, tagfile::Tagfile};
+
+impl<R: Read> Tagfile<R> {
+	#[inline]
+	pub fn read_i32(&mut self) -> Result<i32> {
+		read_i32(&mut self.reader)
+	}
+}
 
 pub fn read_i32(input: &mut impl Read) -> Result<i32> {
 	// Read first byte with sign bit.
