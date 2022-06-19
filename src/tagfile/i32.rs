@@ -1,19 +1,10 @@
 use std::io::Read;
 
-use crate::error::{Error, Result};
+use crate::error::Result;
 
-// TODO: return type
-pub fn read(input: &mut impl Read) -> Result<()> {
-	let magic = read_u64(input)?;
-	if magic != 0xD011FACECAB00D1E {
-		// TODO: macro for assets as errors.
-		return Err(Error::Invalid(format!("Unexpected magic: {magic:#0x}")));
-	}
+use super::common::read_u8;
 
-	Ok(())
-}
-
-fn read_i32(input: &mut impl Read) -> Result<i32> {
+pub fn read_i32(input: &mut impl Read) -> Result<i32> {
 	// Read first byte with sign bit.
 	let mut byte = read_u8(input)?;
 	let negative = byte & 1 == 1;
@@ -32,21 +23,6 @@ fn read_i32(input: &mut impl Read) -> Result<i32> {
 		value = -value;
 	}
 
-	Ok(value)
-}
-
-// TODO: can implement these with a macro
-fn read_u64(input: &mut impl Read) -> Result<u64> {
-	let mut buffer = [0u8; 8];
-	input.read_exact(&mut buffer)?;
-	let value = u64::from_le_bytes(buffer);
-	Ok(value)
-}
-
-fn read_u8(input: &mut impl Read) -> Result<u8> {
-	let mut buffer = [0u8; 1];
-	input.read_exact(&mut buffer)?;
-	let value = u8::from_le_bytes(buffer);
 	Ok(value)
 }
 
