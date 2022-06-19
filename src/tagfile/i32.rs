@@ -45,31 +45,26 @@ mod test {
 
 	#[test]
 	fn zero() {
-		let value = read(&[0]);
-		assert_eq!(value, 0);
+		assert_eq!(read(&[0]), 0);
 	}
 
 	#[test]
 	fn one() {
-		let value = read(&[2]);
-		assert_eq!(value, 1);
+		assert_eq!(read(&[2]), 1);
 	}
 
 	#[test]
 	fn one_negative() {
-		let value = read(&[3]);
-		assert_eq!(value, -1);
+		assert_eq!(read(&[3]), -1);
 	}
 
 	#[test]
 	fn large() {
-		let value = read(&[0xFE, 0xFF, 0x7F]);
-		assert_eq!(value, 1048575);
+		assert_eq!(read(&[0xFE, 0xFF, 0x7F]), 1048575);
 	}
 
 	#[test]
 	fn large_negative() {
-		let value = read(&[0xFF, 0xFF, 0x7F]);
-		assert_eq!(value, -1048575);
+		assert_eq!(read(&[0xFF, 0xFF, 0x7F]), -1048575);
 	}
 }

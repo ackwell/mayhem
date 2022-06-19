@@ -14,6 +14,9 @@ pub struct Tagfile<R> {
 	pub version: i32,
 
 	pub reader: R,
+
+	// Caches
+	pub strings: Vec<Option<String>>,
 }
 
 impl<R: Read> Tagfile<R> {
@@ -21,6 +24,8 @@ impl<R: Read> Tagfile<R> {
 		Self {
 			version: -1,
 			reader,
+
+			strings: Vec::from([Some("".into()), None]),
 		}
 	}
 
