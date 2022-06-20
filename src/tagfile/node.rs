@@ -145,7 +145,37 @@ impl<R: Read> Tagfile<R> {
 				.map(|_| Ok(Value::Node(self.read_value_node()?)))
 				.collect::<Result<Vec<_>>>(),
 
-			other => todo!("Unhandled array kind {kind:?}"),
+			kind @ FieldKind::Array(inner, array_count) => {
+				// Vector<Array< only support specific floating point arrays.
+				// TODO: Pull this logic out as a helper?
+				if !matches!(**inner, FieldKind::Float) || !matches!(array_count, 4 | 8 | 12 | 16) {
+					return Err(Error::Invalid(format!(
+						"Unexpected vector of array kind {kind:?}."
+					)));
+				}
+
+				// 4-element arrays can be represented as 3 elements in data.
+				let mut final_count = *array_count;
+				if final_count == 4 {
+					final_count = usize::try_from(self.read_i32()?).unwrap();
+					if !matches!(final_count, 3 | 4) {
+						return Err(Error::Invalid(format!(
+							"Unexpected array length {final_count}."
+						)));
+					}
+				}
+
+				(0..count)
+					.map(|_| {
+						let array = (0..final_count)
+							.map(|_| Ok(Value::Float(self.read_f32()?)))
+							.collect::<Result<Vec<_>>>()?;
+						Ok(Value::Vector(array))
+					})
+					.collect::<Result<Vec<_>>>()
+			}
+
+			other => todo!("Unhandled vector kind {kind:?}"),
 		}
 	}
 }
@@ -153,6 +183,7 @@ impl<R: Read> Tagfile<R> {
 #[derive(Debug)]
 enum Value {
 	Integer(i32),
+	Float(f32),
 	String(String),
 	Node(usize),
 	Vector(Vec<Value>),
