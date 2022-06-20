@@ -2,7 +2,7 @@ use std::{io::Read, rc::Rc};
 
 use crate::error::{Error, Result};
 
-use super::definition::Definition;
+use super::{definition::Definition, node::Node};
 
 // TODO: return type
 pub fn read(input: &mut impl Read) -> Result<()> {
@@ -56,8 +56,8 @@ impl<R: Read> Tagfile<R> {
 					self.read_definition()?;
 				}
 
-				Tag::Instance => {
-					self.read_instance()?;
+				Tag::Node => {
+					self.read_node()?;
 				}
 
 				other => todo!("Unhandled tag kind {other:?}."),
@@ -72,8 +72,7 @@ impl<R: Read> Tagfile<R> {
 enum Tag {
 	Metadata,
 	Definition,
-	// TODO: Maybe rename instance to node
-	Instance,
+	Node,
 }
 
 impl From<i32> for Tag {
@@ -81,7 +80,7 @@ impl From<i32> for Tag {
 		match value {
 			1 => Self::Metadata,
 			2 => Self::Definition,
-			4 => Self::Instance,
+			4 => Self::Node,
 			other => todo!("Unhandled tag kind ID {other}."),
 		}
 	}

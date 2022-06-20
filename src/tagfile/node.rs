@@ -8,8 +8,8 @@ use super::{
 };
 
 impl<R: Read> Tagfile<R> {
-	pub fn read_instance(&mut self) -> Result<()> {
-		// Read & resolve the definition for this instance.
+	pub fn read_node(&mut self) -> Result<()> {
+		// Read & resolve the definition for this node.
 		let definition_index = usize::try_from(self.read_i32()?).unwrap();
 		let definition = self
 			.definitions
@@ -30,7 +30,6 @@ impl<R: Read> Tagfile<R> {
 			.map(|(field, _)| self.read_value(field))
 			.collect::<Result<Vec<_>>>()?;
 
-		todo!("instance")
 	}
 
 	// TODO: does this need the full field, or just the field kind?
@@ -71,7 +70,7 @@ impl<R: Read> Tagfile<R> {
 				// Read values for the fields of the struct. Of note, fields are flattened
 				// - all of the first field for the entire array will be read before any
 				// of the second, and so on.
-				// TODO: This is similar to logic in read_instance - deduplicate?
+				// TODO: This is similar to logic in read_node - deduplicate?
 				let fields = definition.fields();
 				let stored_fields = self.read_bitfield(fields.len())?;
 				let values = fields
@@ -82,7 +81,7 @@ impl<R: Read> Tagfile<R> {
 			}
 
 			FieldKind::Reference(..) => {
-				Ok((0..count).map(|_| Value::Reference).collect::<Vec<_>>())
+				Ok((0..count).map(|_| Value::Node).collect::<Vec<_>>())
 			}
 
 			other => todo!("Unhandled array kind {kind:?}"),
@@ -94,6 +93,6 @@ impl<R: Read> Tagfile<R> {
 enum Value {
 	String(String),
 	// TODO: work out how this is going to work. Not sure if I want to go for (Rc'd?) values, or perhaps pointers to a position in a node array.
-	Reference,
+	Node,
 	Vector(Vec<Value>),
 }

@@ -2,7 +2,7 @@ mod bitfield;
 mod common;
 mod definition;
 mod i32;
-mod instance;
+mod node;
 mod string;
 mod tagfile;
 
