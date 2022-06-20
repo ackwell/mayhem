@@ -51,6 +51,7 @@ impl<R: Read> Tagfile<R> {
 	// TODO: return type. probably needs a value enum.
 	fn read_value(&mut self, field: &Field) -> Result<Value> {
 		match &field.kind {
+			FieldKind::String => Ok(Value::String(self.read_string()?)),
 			FieldKind::Vector(inner_kind) => {
 				let count = usize::try_from(self.read_i32()?).unwrap();
 				let values = self.read_value_vector(&*inner_kind, count)?;
@@ -61,6 +62,10 @@ impl<R: Read> Tagfile<R> {
 	}
 
 	fn read_value_node(&mut self) -> Result<usize> {
+		if self.version < 2 {
+			todo!("Sub-v2 node values.")
+		}
+
 		let reference_index = usize::try_from(self.read_i32()?).unwrap();
 
 		match self.references.get(reference_index) {
@@ -84,6 +89,21 @@ impl<R: Read> Tagfile<R> {
 
 	fn read_value_vector(&mut self, kind: &FieldKind, count: usize) -> Result<Vec<Value>> {
 		match kind {
+			FieldKind::Integer => {
+				if self.version < 3 {
+					todo!("Sub-v3 integer vector values.");
+				}
+
+				let unknown = self.read_i32()?;
+				if unknown != 4 {
+					todo!("Recieved unexpected integer vector marker {unknown}.");
+				}
+
+				(0..count)
+					.map(|_| Ok(Value::Integer(self.read_i32()?)))
+					.collect::<Result<Vec<_>>>()
+			}
+
 			FieldKind::String => (0..count)
 				.map(|_| Ok(Value::String(self.read_string()?)))
 				.collect::<Result<Vec<_>>>(),
@@ -132,6 +152,7 @@ impl<R: Read> Tagfile<R> {
 
 #[derive(Debug)]
 enum Value {
+	Integer(i32),
 	String(String),
 	Node(usize),
 	Vector(Vec<Value>),
