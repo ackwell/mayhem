@@ -24,7 +24,7 @@ pub struct Tagfile<R> {
 }
 
 impl<R: Read> Tagfile<R> {
-	fn new(reader: R) -> Self {
+	pub fn new(reader: R) -> Self {
 		Self {
 			version: -1,
 			reader,

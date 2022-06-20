@@ -89,6 +89,7 @@ pub struct Definition {
 	fields: Vec<Field>,
 }
 
+// TODO: maybe move fields to seperate module?
 #[derive(Debug)]
 pub struct Field {
 	name: String,
@@ -106,4 +107,63 @@ pub enum FieldKind {
 	Reference(String),
 	Array(Box<FieldKind>),
 	Tuple(Box<FieldKind>, usize),
+}
+
+#[cfg(test)]
+mod test {
+	use std::io::Cursor;
+
+	use crate::tagfile::tagfile::Tagfile;
+
+	use super::FieldKind;
+
+	fn read(input: &[u8]) -> FieldKind {
+		let mut tagfile = Tagfile::new(Cursor::new(input));
+		tagfile.read_kind().unwrap()
+	}
+
+	#[test]
+	fn field_float() {
+		let value = read(&[6]);
+		assert!(
+			matches!(value, FieldKind::Float),
+			"Expected Float, got {value:?}."
+		)
+	}
+
+	#[test]
+	fn field_vector() {
+		let value = read(&[12]);
+		assert!(
+			matches!(value, FieldKind::Tuple(ref inner, 12) if matches!(**inner, FieldKind::Float)),
+			"Expected Tuple(Float, 12), got {value:?}."
+		)
+	}
+
+	#[test]
+	fn field_reference() {
+		let value = read(&[16, 10, 104, 101, 108, 108, 111]);
+		assert!(
+			matches!(value, FieldKind::Reference(ref string) if string == "hello"),
+			"Expected Reference(\"hello\"), got {value:?}."
+		)
+	}
+
+	#[test]
+	fn field_byte_array() {
+		let value = read(&[34]);
+		assert!(
+			matches!(value, FieldKind::Array(ref inner) if matches!(**inner, FieldKind::Byte)),
+			"Expected Array(Byte), got {value:?}."
+		)
+	}
+
+	#[test]
+	fn field_float_tuple() {
+		let value = read(&[70, 8]);
+		assert!(
+			matches!(value, FieldKind::Tuple(ref inner, 4) if matches!(**inner, FieldKind::Float)),
+			"Expected Tuple(Float, 4), got {value:?}."
+		)
+	}
 }
