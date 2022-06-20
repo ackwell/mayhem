@@ -89,6 +89,17 @@ pub struct Definition {
 	fields: Vec<Field>,
 }
 
+impl Definition {
+	// TODO: this generates a bunch of intermediate Vecs, which would be good to avoid.
+	pub fn fields(&self) -> Vec<&Field> {
+		self.parent
+			.iter()
+			.flat_map(|definition| definition.fields())
+			.chain(self.fields.iter())
+			.collect()
+	}
+}
+
 // TODO: maybe move fields to seperate module?
 #[derive(Debug)]
 pub struct Field {

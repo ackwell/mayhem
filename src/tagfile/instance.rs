@@ -6,6 +6,7 @@ use super::tagfile::Tagfile;
 
 impl<R: Read> Tagfile<R> {
 	pub fn read_instance(&mut self) -> Result<()> {
+		// Read & resolve the definition for this instance.
 		let definition_index = usize::try_from(self.read_i32()?).unwrap();
 		let definition = self
 			.definitions
@@ -15,8 +16,22 @@ impl<R: Read> Tagfile<R> {
 				Error::Invalid(format!("Missing definition at index {definition_index}"))
 			})?;
 
-		println!("definition {definition:#?}");
+		let fields = definition.fields();
+		let stored_fields = self.read_bitfield(fields.len())?;
+		let values = fields
+			.into_iter()
+			.enumerate()
+			.filter_map(|(index, field)| match stored_fields[index] {
+				true => Some(self.read_value(field)),
+				false => None,
+			})
+			.collect::<Result<Vec<_>>>()?;
 
 		todo!("instance")
+	}
+
+	fn read_value(&mut self, field: &Field) -> Result<()> {
+		println!("{field:#?}");
+		Ok(())
 	}
 }
