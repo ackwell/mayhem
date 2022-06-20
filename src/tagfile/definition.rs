@@ -54,10 +54,10 @@ impl<R: Read> Tagfile<R> {
 			0x1 => FieldKind::Byte,
 			0x2 => FieldKind::Integer,
 			0x3 => FieldKind::Float,
-			0x4 => FieldKind::Tuple(FieldKind::Float.into(), 4),
-			0x5 => FieldKind::Tuple(FieldKind::Float.into(), 8),
-			0x6 => FieldKind::Tuple(FieldKind::Float.into(), 12),
-			0x7 => FieldKind::Tuple(FieldKind::Float.into(), 16),
+			0x4 => FieldKind::Array(FieldKind::Float.into(), 4),
+			0x5 => FieldKind::Array(FieldKind::Float.into(), 8),
+			0x6 => FieldKind::Array(FieldKind::Float.into(), 12),
+			0x7 => FieldKind::Array(FieldKind::Float.into(), 16),
 			0x8 => FieldKind::Reference(self.read_string()?),
 			0x9 => FieldKind::Struct(self.read_string()?),
 			0xA => FieldKind::String,
@@ -70,9 +70,9 @@ impl<R: Read> Tagfile<R> {
 
 		// Wrap the field kind in container kinds if appropriate.
 		if is_tuple {
-			field_kind = FieldKind::Tuple(field_kind.into(), tuple_size);
+			field_kind = FieldKind::Array(field_kind.into(), tuple_size);
 		} else if is_array {
-			field_kind = FieldKind::Array(field_kind.into());
+			field_kind = FieldKind::Vector(field_kind.into());
 		}
 
 		Ok(field_kind)
@@ -116,9 +116,8 @@ pub enum FieldKind {
 	String,
 	Struct(String),
 	Reference(String),
-	// TODO: This should probably be called vector for consistency with rust.
-	Array(Box<FieldKind>),
-	Tuple(Box<FieldKind>, usize),
+	Vector(Box<FieldKind>),
+	Array(Box<FieldKind>, usize),
 }
 
 #[cfg(test)]
@@ -147,8 +146,8 @@ mod test {
 	fn field_vector() {
 		let value = read(&[12]);
 		assert!(
-			matches!(value, FieldKind::Tuple(ref inner, 12) if matches!(**inner, FieldKind::Float)),
-			"Expected Tuple(Float, 12), got {value:?}."
+			matches!(value, FieldKind::Array(ref inner, 12) if matches!(**inner, FieldKind::Float)),
+			"Expected Array(Float, 12), got {value:?}."
 		)
 	}
 
@@ -165,8 +164,8 @@ mod test {
 	fn field_byte_array() {
 		let value = read(&[34]);
 		assert!(
-			matches!(value, FieldKind::Array(ref inner) if matches!(**inner, FieldKind::Byte)),
-			"Expected Array(Byte), got {value:?}."
+			matches!(value, FieldKind::Vector(ref inner) if matches!(**inner, FieldKind::Byte)),
+			"Expected Vector(Byte), got {value:?}."
 		)
 	}
 
@@ -174,8 +173,8 @@ mod test {
 	fn field_float_tuple() {
 		let value = read(&[70, 8]);
 		assert!(
-			matches!(value, FieldKind::Tuple(ref inner, 4) if matches!(**inner, FieldKind::Float)),
-			"Expected Tuple(Float, 4), got {value:?}."
+			matches!(value, FieldKind::Array(ref inner, 4) if matches!(**inner, FieldKind::Float)),
+			"Expected Array(Float, 4), got {value:?}."
 		)
 	}
 }

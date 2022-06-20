@@ -51,9 +51,9 @@ impl<R: Read> Tagfile<R> {
 	// TODO: return type. probably needs a value enum.
 	fn read_value(&mut self, field: &Field) -> Result<Value> {
 		match &field.kind {
-			FieldKind::Array(inner_kind) => {
+			FieldKind::Vector(inner_kind) => {
 				let count = usize::try_from(self.read_i32()?).unwrap();
-				let values = self.read_value_array(&*inner_kind, count)?;
+				let values = self.read_value_vector(&*inner_kind, count)?;
 				Ok(Value::Vector(values))
 			}
 			other => todo!("Unhandled field kind {other:?}."),
@@ -82,7 +82,7 @@ impl<R: Read> Tagfile<R> {
 		}
 	}
 
-	fn read_value_array(&mut self, kind: &FieldKind, count: usize) -> Result<Vec<Value>> {
+	fn read_value_vector(&mut self, kind: &FieldKind, count: usize) -> Result<Vec<Value>> {
 		match kind {
 			FieldKind::String => (0..count)
 				.map(|_| Ok(Value::String(self.read_string()?)))
@@ -114,7 +114,7 @@ impl<R: Read> Tagfile<R> {
 					.into_iter()
 					.zip(stored_fields.into_iter())
 					.filter(|(_, stored)| *stored)
-					.map(|(field, _)| self.read_value_array(&field.kind, count))
+					.map(|(field, _)| self.read_value_vector(&field.kind, count))
 					.collect::<Vec<_>>();
 
 				// TODO Push nodes onto the node array
