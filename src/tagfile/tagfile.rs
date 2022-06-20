@@ -1,4 +1,4 @@
-use std::{io::Read, rc::Rc};
+use std::{collections::HashMap, io::Read, rc::Rc};
 
 use crate::error::{Error, Result};
 
@@ -17,10 +17,14 @@ pub struct Tagfile<R> {
 
 	pub reader: R,
 
+	pub nodes: Vec<Option<Node>>,
+
 	// Caches
 	// TODO: The Option<>s here are to support empty case values - but there's realistically very few of those, and it complicates consumption a reasonable amount. Consider alternatives.
 	pub definitions: Vec<Option<Rc<Definition>>>,
 	pub strings: Vec<Option<String>>,
+	pub references: Vec<usize>,
+	pub pending_references: HashMap<usize, usize>,
 }
 
 impl<R: Read> Tagfile<R> {
@@ -29,8 +33,12 @@ impl<R: Read> Tagfile<R> {
 			version: -1,
 			reader,
 
+			nodes: Vec::new(),
+
 			definitions: Vec::from([None]),
 			strings: Vec::from([Some("".into()), None]),
+			references: Vec::from([usize::MAX]),
+			pending_references: HashMap::new(),
 		}
 	}
 

@@ -8,6 +8,7 @@ use super::{
 };
 
 impl<R: Read> Tagfile<R> {
+	// TODO: what's the return type going to look like here? For consistency, it should probably act like a reference?
 	pub fn read_node(&mut self) -> Result<()> {
 		// Read & resolve the definition for this node.
 		let definition_index = usize::try_from(self.read_i32()?).unwrap();
@@ -18,6 +19,19 @@ impl<R: Read> Tagfile<R> {
 			.ok_or_else(|| {
 				Error::Invalid(format!("Missing definition at index {definition_index}."))
 			})?;
+
+		// Get the next reference index for this node. If it's already been requested,
+		// we use the pre-reserved node index rather than adding an additional one.
+		let reference_index = self.references.len();
+		let node_index = match self.pending_references.remove_entry(&reference_index) {
+			Some((_key, value)) => value,
+			None => {
+				let next_index = self.nodes.len();
+				self.nodes.push(None);
+				next_index
+			}
+		};
+		self.references.push(node_index);
 
 		// Read fields. Order is guaranteed to follow definition fields, however
 		// values may be sparse, as defined by the bitfield.
@@ -30,6 +44,7 @@ impl<R: Read> Tagfile<R> {
 			.map(|(field, _)| self.read_value(field))
 			.collect::<Result<Vec<_>>>()?;
 
+		Ok(())
 	}
 
 	// TODO: does this need the full field, or just the field kind?
@@ -42,6 +57,28 @@ impl<R: Read> Tagfile<R> {
 				Ok(Value::Vector(values))
 			}
 			other => todo!("Unhandled field kind {other:?}."),
+		}
+	}
+
+	fn read_value_node(&mut self) -> Result<usize> {
+		let reference_index = usize::try_from(self.read_i32()?).unwrap();
+
+		match self.references.get(reference_index) {
+			Some(index) => Ok(*index),
+			// A referenced node hasn't been read yet - reserve an entry in the node
+			// array for it if one does not exist yet, and pre-emptively record that
+			// index as a reference.
+			None => {
+				let reserved_index = self
+					.pending_references
+					.entry(reference_index)
+					.or_insert_with(|| {
+						let reserved_index = self.nodes.len();
+						self.nodes.push(None);
+						reserved_index
+					});
+				Ok(*reserved_index)
+			}
 		}
 	}
 
@@ -77,12 +114,16 @@ impl<R: Read> Tagfile<R> {
 					.into_iter()
 					.zip(stored_fields.into_iter())
 					.filter(|(_, stored)| *stored)
-					.map(|(field, _)| self.read_value_array(&field.kind, count));
+					.map(|(field, _)| self.read_value_array(&field.kind, count))
+					.collect::<Vec<_>>();
+
+				// TODO Push nodes onto the node array
+				Ok((0..count).map(|_| Value::Node(usize::MAX)).collect())
 			}
 
-			FieldKind::Reference(..) => {
-				Ok((0..count).map(|_| Value::Node).collect::<Vec<_>>())
-			}
+			FieldKind::Reference(..) => (0..count)
+				.map(|_| Ok(Value::Node(self.read_value_node()?)))
+				.collect::<Result<Vec<_>>>(),
 
 			other => todo!("Unhandled array kind {kind:?}"),
 		}
@@ -92,7 +133,11 @@ impl<R: Read> Tagfile<R> {
 #[derive(Debug)]
 enum Value {
 	String(String),
-	// TODO: work out how this is going to work. Not sure if I want to go for (Rc'd?) values, or perhaps pointers to a position in a node array.
-	Node,
+	Node(usize),
 	Vector(Vec<Value>),
+}
+
+#[derive(Debug)]
+pub struct Node {
+	// TODO: store fields
 }
