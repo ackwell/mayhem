@@ -2,45 +2,41 @@ use std::io::Read;
 
 use crate::error::Result;
 
-use super::{common::read_u8, tagfile::Tagfile};
+use super::tagfile::Tagfile;
 
 impl<R: Read> Tagfile<R> {
-	#[inline]
 	pub fn read_i32(&mut self) -> Result<i32> {
-		read_i32(&mut self.reader)
+		// Read first byte with sign bit.
+		let mut byte = self.read_u8()?;
+		let negative = byte & 1 == 1;
+		let mut value = i32::from(byte >> 1) & 0x7FFFFFBF;
+
+		// Continue reading bytes while the continuation bit is set.
+		let mut shift = 6;
+		while (byte & 0x80) != 0 {
+			byte = self.read_u8()?;
+			value |= i32::from(byte & 0x7F) << shift;
+			shift += 7;
+		}
+
+		// Once read, negate if the bit was set.
+		if negative {
+			value = -value;
+		}
+
+		Ok(value)
 	}
-}
-
-pub fn read_i32(input: &mut impl Read) -> Result<i32> {
-	// Read first byte with sign bit.
-	let mut byte = read_u8(input)?;
-	let negative = byte & 1 == 1;
-	let mut value = i32::from(byte >> 1) & 0x7FFFFFBF;
-
-	// Continue reading bytes while the continuation bit is set.
-	let mut shift = 6;
-	while (byte & 0x80) != 0 {
-		byte = read_u8(input)?;
-		value |= i32::from(byte & 0x7F) << shift;
-		shift += 7;
-	}
-
-	// Once read, negate if the bit was set.
-	if negative {
-		value = -value;
-	}
-
-	Ok(value)
 }
 
 #[cfg(test)]
 mod test {
 	use std::io::Cursor;
 
-	use super::read_i32;
+	use crate::tagfile::tagfile::Tagfile;
 
 	fn read(input: &[u8]) -> i32 {
-		read_i32(&mut Cursor::new(input)).unwrap()
+		let mut tagfile = Tagfile::new(Cursor::new(input));
+		tagfile.read_i32().unwrap()
 	}
 
 	#[test]
