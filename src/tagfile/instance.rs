@@ -35,26 +35,23 @@ impl<R: Read> Tagfile<R> {
 
 	// TODO: does this need the full field, or just the field kind?
 	// TODO: return type. probably needs a value enum.
-	fn read_value(&mut self, field: &Field) -> Result<()> {
+	fn read_value(&mut self, field: &Field) -> Result<Value> {
 		match &field.kind {
 			FieldKind::Array(inner_kind) => {
 				let count = usize::try_from(self.read_i32()?).unwrap();
-				println!("{count}");
-				self.read_value_array(&*inner_kind, count)?
+				let values = self.read_value_array(&*inner_kind, count)?;
+				Ok(Value::Vector(values))
 			}
 			other => todo!("Unhandled field kind {other:?}."),
-		};
-		Ok(())
+		}
 	}
 
-	// TODO: return type. Not sure how to resolve what the inner type will be... Vec<Value>? but that then means that every entry in the vec could technically be a different type, which... isn't nice, to say the least.
-	fn read_value_array(&mut self, kind: &FieldKind, count: usize) -> Result<()> {
+	fn read_value_array(&mut self, kind: &FieldKind, count: usize) -> Result<Vec<Value>> {
 		match kind {
-			FieldKind::String => {
-				let strings = (0..count)
-					.map(|_| self.read_string())
-					.collect::<Result<Vec<_>>>()?;
-			}
+			FieldKind::String => (0..count)
+				.map(|_| Ok(Value::String(self.read_string()?)))
+				.collect::<Result<Vec<_>>>(),
+
 			// TODO: this is probably complicated enough to warrant its own function.
 			FieldKind::Struct(definition_name) => {
 				// Read in the definition for the requested struct and its fields.
@@ -83,9 +80,20 @@ impl<R: Read> Tagfile<R> {
 					.filter(|(_, stored)| *stored)
 					.map(|(field, _)| self.read_value_array(&field.kind, count));
 			}
-			other => todo!("Unhandled array kind {kind:?}"),
-		};
 
-		Ok(())
+			FieldKind::Reference(..) => {
+				Ok((0..count).map(|_| Value::Reference).collect::<Vec<_>>())
+			}
+
+			other => todo!("Unhandled array kind {kind:?}"),
+		}
 	}
+}
+
+#[derive(Debug)]
+enum Value {
+	String(String),
+	// TODO: work out how this is going to work. Not sure if I want to go for (Rc'd?) values, or perhaps pointers to a position in a node array.
+	Reference,
+	Vector(Vec<Value>),
 }

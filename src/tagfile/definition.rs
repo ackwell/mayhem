@@ -116,6 +116,7 @@ pub enum FieldKind {
 	String,
 	Struct(String),
 	Reference(String),
+	// TODO: This should probably be called vector for consistency with rust.
 	Array(Box<FieldKind>),
 	Tuple(Box<FieldKind>, usize),
 }

@@ -72,6 +72,7 @@ impl<R: Read> Tagfile<R> {
 enum Tag {
 	Metadata,
 	Definition,
+	// TODO: Maybe rename instance to node
 	Instance,
 }
 
