@@ -68,6 +68,11 @@ impl<R: Read> Tagfile<R> {
 					self.read_node()?;
 				}
 
+				Tag::EndOfFile => {
+					// TODO: cleanup & checks
+					break;
+				}
+
 				other => todo!("Unhandled tag kind {other:?}."),
 			}
 		}
@@ -81,6 +86,7 @@ enum Tag {
 	Metadata,
 	Definition,
 	Node,
+	EndOfFile,
 }
 
 impl From<i32> for Tag {
@@ -89,6 +95,7 @@ impl From<i32> for Tag {
 			1 => Self::Metadata,
 			2 => Self::Definition,
 			4 => Self::Node,
+			7 => Self::EndOfFile,
 			other => todo!("Unhandled tag kind ID {other}."),
 		}
 	}
