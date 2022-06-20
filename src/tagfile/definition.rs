@@ -82,7 +82,7 @@ impl<R: Read> Tagfile<R> {
 // TODO: These structs might make sense outside the immediate context of tagfiles, lift out?
 #[derive(Debug)]
 pub struct Definition {
-	name: String,
+	pub name: String,
 	version: i32,
 	// TODO: Not super happy with the Rc here, though it's relatively ergonomic...
 	parent: Option<Rc<Definition>>,
@@ -104,7 +104,7 @@ impl Definition {
 #[derive(Debug)]
 pub struct Field {
 	name: String,
-	kind: FieldKind,
+	pub kind: FieldKind,
 }
 
 #[derive(Debug)]
