@@ -1,9 +1,9 @@
-use std::io::Read;
+use std::{io::Read, rc::Rc};
 
 use crate::error::{Error, Result};
 
 use super::{
-	definition::{Field, FieldKind},
+	definition::{Definition, Field, FieldKind},
 	tagfile::Tagfile,
 };
 
@@ -44,7 +44,9 @@ impl<R: Read> Tagfile<R> {
 			.map(|(field, _)| self.read_value(field))
 			.collect::<Result<Vec<_>>>()?;
 
-		Ok(())
+		self.nodes[node_index] = Some(Node { definition, values });
+
+		Ok(node_index)
 	}
 
 	// TODO: does this need the full field, or just the field kind?
@@ -135,10 +137,25 @@ impl<R: Read> Tagfile<R> {
 					.zip(stored_fields.into_iter())
 					.filter(|(_, stored)| *stored)
 					.map(|(field, _)| self.read_value_vector(&field.kind, count))
+					.collect::<Result<Vec<_>>>()?;
+
+				// Collate the read values into the final vector of nodes.
+				let nodes = (0..count)
+					.map(|index| {
+						let node_index = self.nodes.len();
+						self.nodes.push(Some(Node {
+							// TODO: Not keen on the clone here but the structure makes it a bit hard. Other options?
+							definition: definition.clone(),
+							values: values
+								.iter()
+								.map(|field_values| field_values[index].clone())
+								.collect::<Vec<_>>(),
+						}));
+						Value::Node(node_index)
+					})
 					.collect::<Vec<_>>();
 
-				// TODO Push nodes onto the node array
-				Ok((0..count).map(|_| Value::Node(usize::MAX)).collect())
+				Ok(nodes)
 			}
 
 			FieldKind::Reference(..) => (0..count)
@@ -180,7 +197,7 @@ impl<R: Read> Tagfile<R> {
 	}
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 enum Value {
 	Integer(i32),
 	Float(f32),
@@ -191,5 +208,6 @@ enum Value {
 
 #[derive(Debug)]
 pub struct Node {
-	// TODO: store fields
+	definition: Rc<Definition>,
+	values: Vec<Value>,
 }
