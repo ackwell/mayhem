@@ -2,8 +2,10 @@ use std::io;
 
 use thiserror::Error;
 
+/// An error that occured.
 #[derive(Error, Debug)]
 pub enum Error {
+	/// Invalid data or behavior was encountered.
 	#[error("Invalid: {0}")]
 	Invalid(String),
 }

@@ -6,7 +6,7 @@ use crate::{
 	walker::NodeWalker,
 };
 
-// TODO: return type
+/// Read a binary tagfile.
 pub fn read(input: &mut impl Read) -> Result<NodeWalker> {
 	let mut tagfile = Tagfile::new(input);
 	let root_index = tagfile.read()?;

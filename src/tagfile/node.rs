@@ -189,6 +189,7 @@ impl<R: Read> Tagfile<R> {
 					.into_iter()
 					.zip(field_mask.iter())
 					.filter(|(_, stored)| **stored)
+					// TODO: non-float arrays should follow a different code path in the map here, i think
 					.map(|(field, _)| self.read_value_vector(&field.kind, count))
 					.collect::<Result<Vec<_>>>()?;
 
