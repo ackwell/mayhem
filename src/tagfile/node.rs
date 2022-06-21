@@ -49,15 +49,19 @@ impl<R: Read> Tagfile<R> {
 		// Read fields. Order is guaranteed to follow definition fields, however
 		// values may be sparse, as defined by the bitfield.
 		let fields = definition.fields();
-		let stored_fields = self.read_bitfield(fields.len())?;
+		let field_mask = self.read_bitfield(fields.len())?;
 		let values = fields
 			.into_iter()
-			.zip(stored_fields.into_iter())
-			.filter(|(_, stored)| *stored)
+			.zip(field_mask.iter())
+			.filter(|(_, stored)| **stored)
 			.map(|(field, _)| self.read_value(field))
 			.collect::<Result<Vec<_>>>()?;
 
-		self.nodes[node_index] = Some(Node { definition, values });
+		self.nodes[node_index] = Some(Node {
+			definition,
+			field_mask,
+			values,
+		});
 
 		Ok(node_index)
 	}
@@ -180,11 +184,11 @@ impl<R: Read> Tagfile<R> {
 				// of the second, and so on.
 				// TODO: This is similar to logic in read_node - deduplicate?
 				let fields = definition.fields();
-				let stored_fields = self.read_bitfield(fields.len())?;
+				let field_mask = self.read_bitfield(fields.len())?;
 				let values = fields
 					.into_iter()
-					.zip(stored_fields.into_iter())
-					.filter(|(_, stored)| *stored)
+					.zip(field_mask.iter())
+					.filter(|(_, stored)| **stored)
 					.map(|(field, _)| self.read_value_vector(&field.kind, count))
 					.collect::<Result<Vec<_>>>()?;
 
@@ -195,6 +199,7 @@ impl<R: Read> Tagfile<R> {
 						self.nodes.push(Some(Node {
 							// TODO: Not keen on the clone here but the structure makes it a bit hard. Other options?
 							definition: definition.clone(),
+							field_mask: field_mask.clone(),
 							values: values
 								.iter()
 								.map(|field_values| field_values[index].clone())
@@ -260,5 +265,6 @@ enum Value {
 #[derive(Debug)]
 pub struct Node {
 	definition: Rc<Definition>,
+	field_mask: Vec<bool>,
 	values: Vec<Value>,
 }
