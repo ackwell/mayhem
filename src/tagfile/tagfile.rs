@@ -65,7 +65,7 @@ impl<R: Read> Tagfile<R> {
 				}
 
 				Tag::Node => {
-					self.read_node()?;
+					self.read_node(None, true)?;
 				}
 
 				Tag::EndOfFile => {

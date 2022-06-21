@@ -9,29 +9,42 @@ use super::{
 
 impl<R: Read> Tagfile<R> {
 	// TODO: what's the return type going to look like here? For consistency, it should probably act like a reference?
-	pub fn read_node(&mut self) -> Result<()> {
-		// Read & resolve the definition for this node.
-		let definition_index = usize::try_from(self.read_i32()?).unwrap();
-		let definition = self
-			.definitions
-			.get(definition_index)
-			.and_then(|found| found.clone())
-			.ok_or_else(|| {
-				Error::Invalid(format!("Missing definition at index {definition_index}."))
-			})?;
+	pub fn read_node(
+		&mut self,
+		definition: Option<Rc<Definition>>,
+		store_reference: bool,
+	) -> Result<usize> {
+		// Default to storing the node at the end of the node array.
+		let mut node_index = self.nodes.len();
 
-		// Get the next reference index for this node. If it's already been requested,
-		// we use the pre-reserved node index rather than adding an additional one.
-		let reference_index = self.references.len();
-		let node_index = match self.pending_references.remove_entry(&reference_index) {
-			Some((_key, value)) => value,
+		// If storing a reference, check if it's already been requested. If it has,
+		// we can use the pre-reserved node index rather than adding a new one.
+		if store_reference {
+			let reference_index = self.references.len();
+			if let Some((_key, value)) = self.pending_references.remove_entry(&reference_index) {
+				node_index = value;
+			}
+			self.references.push(node_index);
+		}
+
+		// If the node is still intended to be placed at the end, reserve a position for it.
+		if node_index == self.nodes.len() {
+			self.nodes.push(None);
+		}
+
+		// Read & resolve the definition for this node, if one has not been provided.
+		let definition = match definition {
+			Some(definition) => definition,
 			None => {
-				let next_index = self.nodes.len();
-				self.nodes.push(None);
-				next_index
+				let definition_index = usize::try_from(self.read_i32()?).unwrap();
+				self.definitions
+					.get(definition_index)
+					.and_then(|found| found.clone())
+					.ok_or_else(|| {
+						Error::Invalid(format!("Missing definition at index {definition_index}."))
+					})?
 			}
 		};
-		self.references.push(node_index);
 
 		// Read fields. Order is guaranteed to follow definition fields, however
 		// values may be sparse, as defined by the bitfield.
@@ -54,6 +67,26 @@ impl<R: Read> Tagfile<R> {
 	fn read_value(&mut self, field: &Field) -> Result<Value> {
 		match &field.kind {
 			FieldKind::String => Ok(Value::String(self.read_string()?)),
+
+			FieldKind::Struct(name) => {
+				if self.version < 2 {
+					todo!("Sub-v2 struct values.");
+				}
+
+				// Look up the definition for the struct by name.
+				let definition = self
+					.definitions
+					.iter()
+					.flatten()
+					.find(|definition| &definition.name == name)
+					.ok_or_else(|| Error::Invalid(format!("Missing definition for {name}")))?
+					.clone();
+
+				Ok(Value::Node(self.read_node(Some(definition), false)?))
+			}
+
+			FieldKind::Reference(..) => Ok(Value::Node(self.read_value_node()?)),
+
 			FieldKind::Vector(inner_kind) => {
 				let count = usize::try_from(self.read_i32()?).unwrap();
 				let values = self.read_value_vector(&*inner_kind, count)?;
@@ -65,7 +98,7 @@ impl<R: Read> Tagfile<R> {
 
 	fn read_value_node(&mut self) -> Result<usize> {
 		if self.version < 2 {
-			todo!("Sub-v2 node values.")
+			todo!("Sub-v2 node values.");
 		}
 
 		let reference_index = usize::try_from(self.read_i32()?).unwrap();
