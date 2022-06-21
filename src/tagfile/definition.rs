@@ -1,6 +1,9 @@
 use std::{io::Read, rc::Rc};
 
-use crate::error::{Error, Result};
+use crate::{
+	error::{Error, Result},
+	node::{Definition, Field, FieldKind},
+};
 
 use super::tagfile::Tagfile;
 
@@ -79,54 +82,11 @@ impl<R: Read> Tagfile<R> {
 	}
 }
 
-// TODO: These structs might make sense outside the immediate context of tagfiles, lift out?
-#[derive(Debug)]
-pub struct Definition {
-	pub name: String,
-	version: i32,
-	// TODO: Not super happy with the Rc here, though it's relatively ergonomic...
-	parent: Option<Rc<Definition>>,
-	fields: Vec<Field>,
-}
-
-impl Definition {
-	// TODO: this generates a bunch of intermediate Vecs, which would be good to avoid.
-	pub fn fields(&self) -> Vec<&Field> {
-		self.parent
-			.iter()
-			.flat_map(|definition| definition.fields())
-			.chain(self.fields.iter())
-			.collect()
-	}
-}
-
-// TODO: maybe move fields to seperate module?
-#[derive(Debug)]
-pub struct Field {
-	name: String,
-	pub kind: FieldKind,
-}
-
-#[derive(Debug)]
-pub enum FieldKind {
-	Void,
-	Byte,
-	Float,
-	Integer,
-	String,
-	Struct(String),
-	Reference(String),
-	Vector(Box<FieldKind>),
-	Array(Box<FieldKind>, usize),
-}
-
 #[cfg(test)]
 mod test {
 	use std::io::Cursor;
 
-	use crate::tagfile::tagfile::Tagfile;
-
-	use super::FieldKind;
+	use crate::{node::FieldKind, tagfile::tagfile::Tagfile};
 
 	fn read(input: &[u8]) -> FieldKind {
 		let mut tagfile = Tagfile::new(Cursor::new(input));

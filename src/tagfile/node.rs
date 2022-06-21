@@ -1,11 +1,11 @@
 use std::{io::Read, rc::Rc};
 
-use crate::error::{Error, Result};
-
-use super::{
-	definition::{Definition, Field, FieldKind},
-	tagfile::Tagfile,
+use crate::{
+	error::{Error, Result},
+	node::{Definition, FieldKind, Node, Value},
 };
+
+use super::tagfile::Tagfile;
 
 impl<R: Read> Tagfile<R> {
 	// TODO: what's the return type going to look like here? For consistency, it should probably act like a reference?
@@ -54,7 +54,7 @@ impl<R: Read> Tagfile<R> {
 			.into_iter()
 			.zip(field_mask.iter())
 			.filter(|(_, stored)| **stored)
-			.map(|(field, _)| self.read_value(field))
+			.map(|(field, _)| self.read_value(&field.kind))
 			.collect::<Result<Vec<_>>>()?;
 
 		self.nodes[node_index] = Some(Node {
@@ -67,8 +67,8 @@ impl<R: Read> Tagfile<R> {
 	}
 
 	// TODO: does this need the full field, or just the field kind?
-	fn read_value(&mut self, field: &Field) -> Result<Value> {
-		match &field.kind {
+	fn read_value(&mut self, kind: &FieldKind) -> Result<Value> {
+		match kind {
 			FieldKind::Byte => Ok(Value::U8(self.read_u8()?)),
 
 			FieldKind::Integer => Ok(Value::I32(self.read_i32()?)),
@@ -247,24 +247,7 @@ impl<R: Read> Tagfile<R> {
 					.collect::<Result<Vec<_>>>()
 			}
 
-			other => todo!("Unhandled vector kind {kind:?}"),
+			other => todo!("Unhandled vector kind {other:?}"),
 		}
 	}
-}
-
-#[derive(Clone, Debug)]
-enum Value {
-	U8(u8),
-	I32(i32),
-	F32(f32),
-	String(String),
-	Node(usize),
-	Vector(Vec<Value>),
-}
-
-#[derive(Debug)]
-pub struct Node {
-	definition: Rc<Definition>,
-	field_mask: Vec<bool>,
-	values: Vec<Value>,
 }

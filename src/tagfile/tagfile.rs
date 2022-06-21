@@ -1,8 +1,9 @@
 use std::{collections::HashMap, io::Read, rc::Rc};
 
-use crate::error::{Error, Result};
-
-use super::{definition::Definition, node::Node};
+use crate::{
+	error::{Error, Result},
+	node::{Definition, Node},
+};
 
 // TODO: return type
 pub fn read(input: &mut impl Read) -> Result<()> {
@@ -73,6 +74,7 @@ impl<R: Read> Tagfile<R> {
 					break;
 				}
 
+				#[allow(unreachable_patterns)]
 				other => todo!("Unhandled tag kind {other:?}."),
 			}
 		}
