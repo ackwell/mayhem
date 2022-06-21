@@ -43,7 +43,7 @@ impl<R: Read> Tagfile<R> {
 		}
 	}
 
-	fn read(&mut self) -> Result<()> {
+	fn read(&mut self) -> Result<usize> {
 		let magic = self.read_u64()?;
 		if magic != 0xD011FACECAB00D1E {
 			// TODO: macro for assets as errors.
@@ -70,7 +70,6 @@ impl<R: Read> Tagfile<R> {
 				}
 
 				Tag::EndOfFile => {
-					// TODO: cleanup & checks
 					break;
 				}
 
@@ -79,7 +78,33 @@ impl<R: Read> Tagfile<R> {
 			}
 		}
 
-		Ok(())
+		// Ensure that there's no pending references that weren't fulfilled.
+		if !self.pending_references.is_empty() {
+			return Err(Error::Invalid(format!(
+				"Dangling references remaining at end of file: {:?}.",
+				self.pending_references.keys().collect::<Vec<_>>()
+			)));
+		}
+
+		// Ensure that all reserved nodes were filled.
+		if self.nodes.iter().any(|node| node.is_none()) {
+			return Err(Error::Invalid(format!(
+				"Reserved nodes with no content remaining at end of file: {:?}.",
+				self.nodes
+					.iter()
+					.enumerate()
+					.filter_map(|(index, entry)| entry.as_ref().map(|_| index))
+					.collect::<Vec<_>>()
+			)));
+		}
+
+		// The root node will be the first stored reference (ignoring the pre-supplied fake reference).
+		let root_index = match self.references.get(1) {
+			Some(index) => index,
+			None => return Err(Error::Invalid("No root object found.".into())),
+		};
+
+		Ok(*root_index)
 	}
 }
 
