@@ -3,14 +3,18 @@ use std::{collections::HashMap, io::Read, rc::Rc};
 use crate::{
 	error::{Error, Result},
 	node::{Definition, Node},
+	walker::NodeWalker,
 };
 
 // TODO: return type
-pub fn read(input: &mut impl Read) -> Result<()> {
+pub fn read(input: &mut impl Read) -> Result<NodeWalker> {
 	let mut tagfile = Tagfile::new(input);
-	tagfile.read()?;
-
-	Ok(())
+	let root_index = tagfile.read()?;
+	let nodes = tagfile.nodes.into_iter().flatten().collect();
+	Ok(NodeWalker {
+		nodes: Rc::new(nodes),
+		index: root_index,
+	})
 }
 
 pub struct Tagfile<R> {
