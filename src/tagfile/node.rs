@@ -63,9 +63,12 @@ impl<R: Read> Tagfile<R> {
 	}
 
 	// TODO: does this need the full field, or just the field kind?
-	// TODO: return type. probably needs a value enum.
 	fn read_value(&mut self, field: &Field) -> Result<Value> {
 		match &field.kind {
+			FieldKind::Byte => Ok(Value::U8(self.read_u8()?)),
+
+			FieldKind::Integer => Ok(Value::I32(self.read_i32()?)),
+
 			FieldKind::String => Ok(Value::String(self.read_string()?)),
 
 			FieldKind::Struct(name) => {
@@ -135,7 +138,7 @@ impl<R: Read> Tagfile<R> {
 				}
 
 				(0..count)
-					.map(|_| Ok(Value::Integer(self.read_i32()?)))
+					.map(|_| Ok(Value::I32(self.read_i32()?)))
 					.collect::<Result<Vec<_>>>()
 			}
 
@@ -218,7 +221,7 @@ impl<R: Read> Tagfile<R> {
 				(0..count)
 					.map(|_| {
 						let array = (0..final_count)
-							.map(|_| Ok(Value::Float(self.read_f32()?)))
+							.map(|_| Ok(Value::F32(self.read_f32()?)))
 							.collect::<Result<Vec<_>>>()?;
 						Ok(Value::Vector(array))
 					})
@@ -232,8 +235,9 @@ impl<R: Read> Tagfile<R> {
 
 #[derive(Clone, Debug)]
 enum Value {
-	Integer(i32),
-	Float(f32),
+	U8(u8),
+	I32(i32),
+	F32(f32),
 	String(String),
 	Node(usize),
 	Vector(Vec<Value>),
