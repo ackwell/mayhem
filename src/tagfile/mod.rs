@@ -1,4 +1,4 @@
-//! Utilities for working with binary tagfile formats.
+//! Utilities for reading with binary tagfile formats.
 
 mod bitfield;
 mod common;
