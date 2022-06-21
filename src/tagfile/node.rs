@@ -95,6 +95,19 @@ impl<R: Read> Tagfile<R> {
 				let values = self.read_value_vector(&*inner_kind, count)?;
 				Ok(Value::Vector(values))
 			}
+
+			kind @ FieldKind::Array(inner, count) => {
+				if !matches!(**inner, FieldKind::Float) || !matches!(count, 4 | 8 | 12 | 16) {
+					return Err(Error::Invalid(format!("Unexpected array kind {kind:?}.")));
+				}
+
+				let values = (0..*count)
+					.map(|_| Ok(Value::F32(self.read_f32()?)))
+					.collect::<Result<Vec<_>>>()?;
+
+				Ok(Value::Vector(values))
+			}
+
 			other => todo!("Unhandled field kind {other:?}."),
 		}
 	}
@@ -194,6 +207,7 @@ impl<R: Read> Tagfile<R> {
 				Ok(nodes)
 			}
 
+			// TODO: Can I use the definition name in the type to sanity check?
 			FieldKind::Reference(..) => (0..count)
 				.map(|_| Ok(Value::Node(self.read_value_node()?)))
 				.collect::<Result<Vec<_>>>(),
