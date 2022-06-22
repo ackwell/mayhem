@@ -9,4 +9,4 @@ mod walker;
 
 pub mod tagfile;
 
-pub use {error::Error, walker::NodeWalker};
+pub use {error::Error, node::Value, walker::NodeWalker};
