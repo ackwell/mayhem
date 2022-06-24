@@ -2,7 +2,8 @@ use std::{io::Read, rc::Rc};
 
 use crate::{
 	error::{Error, Result},
-	node::{Definition, FieldKind, Node, Value},
+	node::{Definition, FieldKind, Node},
+	value::Value,
 };
 
 use super::tagfile::Tagfile;

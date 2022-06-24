@@ -1,6 +1,9 @@
 use std::{fmt, rc::Rc};
 
-use crate::node::{Field, Node, Value};
+use crate::{
+	node::{Field, Node},
+	value::Value,
+};
 
 /// View into a collection of nodes.
 pub struct NodeWalker {

@@ -1,5 +1,7 @@
 use std::rc::Rc;
 
+use crate::value::Value;
+
 #[derive(Debug)]
 pub struct Node {
 	pub definition: Rc<Definition>,
@@ -45,14 +47,4 @@ pub enum FieldKind {
 	Reference(String),
 	Vector(Box<FieldKind>),
 	Array(Box<FieldKind>, usize),
-}
-
-#[derive(Clone, Debug)]
-pub enum Value {
-	U8(u8),
-	I32(i32),
-	F32(f32),
-	String(String),
-	Node(usize),
-	Vector(Vec<Value>),
 }

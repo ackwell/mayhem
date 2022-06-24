@@ -5,8 +5,9 @@
 
 mod error;
 mod node;
+mod value;
 mod walker;
 
 pub mod tagfile;
 
-pub use {error::Error, node::Value, walker::NodeWalker};
+pub use {error::Error, value::Value, walker::NodeWalker};
