@@ -153,18 +153,18 @@ impl<'a> BlockDataReader<'a> {
 	}
 
 	fn read_k40_quat(&mut self) -> Result<[f32; 4]> {
-		const MASK: u64 = (1 << 12) - 1;
-		const DELTA: u64 = MASK >> 1;
+		const MASK: i64 = (1 << 12) - 1;
+		const DELTA: i64 = MASK >> 1;
 		const DELTAF: f32 = DELTA as f32;
 
 		let mut v = [0u8; 5];
 		self.reader.read_exact(&mut v)?;
-		let n = 0u64
-			| ((v[4] as u64) << 32)
-			| ((v[3] as u64) << 24)
-			| ((v[2] as u64) << 16)
-			| ((v[1] as u64) << 8)
-			| ((v[0] as u64) << 0);
+		let n = 0i64
+			| ((v[4] as i64) << 32)
+			| ((v[3] as i64) << 24)
+			| ((v[2] as i64) << 16)
+			| ((v[1] as i64) << 8)
+			| ((v[0] as i64) << 0);
 
 		let mut tmp: [f32; 4] = [
 			(((n >> 0) & MASK) - DELTA) as f32 * std::f32::consts::FRAC_1_SQRT_2 / DELTAF,
