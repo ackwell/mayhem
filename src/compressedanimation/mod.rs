@@ -2,5 +2,6 @@
 
 mod compressedanimation;
 mod splinecompressedanimation;
+mod concatanimation;
 
-pub use compressedanimation::{AnimationTrait, CompressedAnimation};
+pub use compressedanimation::{AnimationTrait, InterpolatableTimeToValueTrait, read_animation, new_from_root};
