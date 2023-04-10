@@ -360,6 +360,11 @@ impl CompressedFloatArray<4> {
 			let num_items = reader.read_u16()? as usize;
 			let degree = reader.read_u8()? as usize;
 			let knots = reader.read_bytes(num_items + degree + 2)?;
+			reader.align(match primitive_type {
+				CompressedQuaternionType::K32 => 4,
+				CompressedQuaternionType::K48 => 2,
+				_ => 1,  // maybe not for other types, idk
+			})?;
 
 			let control_points = match primitive_type {
 				CompressedQuaternionType::K32 => (0..num_items + 1)
