@@ -74,6 +74,8 @@ impl<R: Read> Tagfile<R> {
 
 			FieldKind::Integer => Ok(Value::I32(self.read_i32()?)),
 
+			FieldKind::Float => Ok(Value::F32(self.read_f32()?)),
+
 			FieldKind::String => Ok(Value::String(self.read_string()?)),
 
 			FieldKind::Struct(name) => {
@@ -159,6 +161,10 @@ impl<R: Read> Tagfile<R> {
 					.map(|_| Ok(Value::I32(self.read_i32()?)))
 					.collect::<Result<Vec<_>>>()
 			}
+
+			FieldKind::Byte => (0..count)
+				.map(|_| Ok(Value::U8(self.read_u8()?)))
+				.collect::<Result<Vec<_>>>(),
 
 			FieldKind::String => (0..count)
 				.map(|_| Ok(Value::String(self.read_string()?)))

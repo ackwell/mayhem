@@ -4,10 +4,12 @@
 #![warn(missing_debug_implementations, missing_docs)]
 
 mod error;
+mod macros;
 mod node;
 mod value;
 mod walker;
 
+pub mod compressedanimation;
 pub mod tagfile;
 
 pub use {error::Error, value::Value, walker::NodeWalker};
